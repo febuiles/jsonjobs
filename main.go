@@ -1,9 +1,5 @@
 package main
 
-// coger top level postings
-// filtrar por la primera lista
-// 3 lineas de la descripcion
-
 import (
 	"fmt"
 	"io"
@@ -15,10 +11,10 @@ import (
 )
 
 type JobEntry struct {
-	CompanyTitle string
-	Location     string
-	URL          string
-	JobTitle     string
+	CompanyTitle string `json:"company_title"`
+	Location     string `json:"location"`
+	URL          string `json:"url"`
+	JobTitle     string `json:"job_title"`
 }
 
 func main() {
@@ -54,7 +50,7 @@ func main() {
 
 			parsed, err := parseEntry(commentBody)
 			if err != nil {
-				//				log.Println("parse: bad body", err)
+				log.Println("parse: bad body", err)
 				return
 			}
 
@@ -62,25 +58,23 @@ func main() {
 		})
 	})
 
-	for e := range entries {
-		fmt.Println(e)
+	apiKey := "OPENAI_KEY"
+	endpoint := "https://api.openai.com/v1/chat/completions"
+
+	openapiClient := NewOpenAIClient(apiKey, endpoint)
+
+	for _, e := range entries {
+		res := openapiClient.ParseEntry(e.Location)
+		fmt.Println(res)
 	}
 }
 
 func parseEntry(body string) (JobEntry, error) {
 	entry := JobEntry{}
 	firstLine := strings.Split(body, "\n")[0]
+
 	entry.CompanyTitle = strings.Split(firstLine, "|")[0]
-
-	if strings.Contains("Amsterdam", firstLine) ||
-		strings.Contains("EU", firstLine) ||
-		strings.Contains("Netherlands ", firstLine) ||
-		(strings.Contains("REMOTE", firstLine) && !strings.Contains("REMOTE (US", firstLine)) {
-		entry.Location = firstLine
-	} else {
-		return JobEntry{}, fmt.Errorf("parse: location not interesting")
-	}
-
+	entry.Location = body
 	entry.URL = "donthave.com"
 	entry.JobTitle = "engineer"
 
